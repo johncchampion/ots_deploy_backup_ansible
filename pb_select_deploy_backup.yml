@@ -1,0 +1,117 @@
+# ##########################################################################################
+
+- name: B A C K U P  O N T A P  S E L E C T  D E P L O Y  D A T A
+
+  hosts: "localhost"
+  gather_facts: false
+
+# ------------------------------------------------------------------------------------------
+
+  vars:
+    - deploy_login: "admin"
+    - deploy_pw: "Netapp1!"
+    - deploy_url: "https://192.168.43.190/api/v3"
+    - deploy_backup_pw: "{{ deploy_pw }}"
+    - deploy_backup_dir: "{{ playbook_dir }}/backups/"
+    - deploy_delete_backup: "DELETE"
+
+# ------------------------------------------------------------------------------------------
+
+  tasks:
+ 
+  - name: ..... create backup
+
+    uri:
+      url: "{{ deploy_url }}/backups?fields=*"
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      body:
+        password: "{{ deploy_backup_pw }}"
+      body_format: json
+      user: "{{ deploy_login }}"
+      password: "{{ deploy_pw }}"
+      status_code: 202
+      validate_certs: false
+
+    register: backup_create_response
+
+# ------------------------------------------------------------------------------------------
+
+  - name: .....monitor job until "success" or "failure"
+
+    uri:
+      url: "{{ deploy_url }}/jobs/{{ backup_create_response.json.job.id }}"
+      method: GET
+      headers:
+        Content-Type: "application/json"
+      body_format: json
+      user: "{{ deploy_login }}"
+      password: "{{ deploy_pw }}"
+      status_code: 200
+      validate_certs: False
+    register: job_response
+    until: job_response.json.record.state == "success" or job_response.json.record.state == "failure"
+    retries: 30
+    delay: 5
+
+  - fail:
+      msg: "Backup Job Failed: {{ backup_create_response.json.job.id }}"
+    when:
+      - job_response.json.record.state == "failure"
+
+# ------------------------------------------------------------------------------------------
+
+  - name: .....get download link for backup file
+
+    uri:
+      url: "{{ backup_create_response.location }}?fields=download_url"
+      method: GET
+      headers:
+        Content-Type: "application/json"
+      user: "{{ deploy_login }}"
+      password: "{{ deploy_pw }}"
+      status_code: 200
+      validate_certs: false
+
+    register: backup_url_response
+
+# ------------------------------------------------------------------------------------------
+
+  - name: .....verify backup directory exists
+
+    file:
+      path: "{{ deploy_backup_dir }}"
+      state: directory
+
+# ------------------------------------------------------------------------------------------
+
+  - name: .....download backup file
+
+    get_url:
+      url: "{{ backup_url_response.json.record.download_url }}"
+      dest: "{{ deploy_backup_dir }}"
+      url_username: "{{ deploy_login }}"
+      url_password: "{{ deploy_pw }}"
+      timeout: 180
+      validate_certs: False
+
+# ------------------------------------------------------------------------------------------
+
+  - name: .....delete backup file stored on Deploy server
+
+    uri:
+      url: "{{ backup_create_response.location }}"
+      method: DELETE
+      headers:
+        Content-Type: "application/json"
+      user: "{{ deploy_login }}"
+      password: "{{ deploy_pw }}"
+      status_code: 200
+      validate_certs: false
+
+    register: backup_delete_response
+
+    when: deploy_delete_backup == "DELETE"
+
+# ##########################################################################################
