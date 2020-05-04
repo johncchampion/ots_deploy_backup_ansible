@@ -6,7 +6,7 @@
   hosts: "localhost"
   gather_facts: false
 
-# ------------------------------------------------------------------------------------------
+# Edit this section for your environment
 
   vars:
     - deploy_login: "admin"
