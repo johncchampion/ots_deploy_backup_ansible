@@ -38,16 +38,3 @@ The playbook and associated components are provided as-is and are intended to pr
 4. Create backup directory if it does not exist (account requires write permissions)
 5. Download backup file
 6. Optional: Delete the backup file on the Deploy server
-
-```mermaid
-sequenceDiagram
-    participant dotcom
-    participant iframe
-    participant viewscreen
-    dotcom->>iframe: loads html w/ iframe url
-    iframe->>viewscreen: request template
-    viewscreen->>iframe: html & javascript
-    iframe->>dotcom: iframe ready
-    dotcom->>iframe: set mermaid data on iframe
-    iframe->>iframe: render mermaid
-```
