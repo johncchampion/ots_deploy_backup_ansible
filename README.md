@@ -33,7 +33,7 @@ The playbook and associated components are provided as-is and are intended to pr
     - deploy_delete_backup: "DELETE"
 </pre>
 
-* Example: **ansible-playbook pb_select_deploy_backup"**
+* Example: **ansible-playbook pb_ots_deploy_backup"**
 
 ### Workflow
 1. Generate a backup with internally generated name
